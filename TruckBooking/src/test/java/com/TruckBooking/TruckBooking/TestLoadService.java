@@ -1,14 +1,28 @@
-/*
+
 package com.TruckBooking.TruckBooking;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,18 +30,32 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
+import com.TruckBooking.TruckBooking.Exception.BusinessException;
+import com.TruckBooking.TruckBooking.Exception.EntityNotFoundException;
 import com.TruckBooking.TruckBooking.Constants.CommonConstants;
 import com.TruckBooking.TruckBooking.Dao.LoadDao;
 import com.TruckBooking.TruckBooking.Entities.Load;
+import com.TruckBooking.TruckBooking.Entities.Load.Status;
+import com.TruckBooking.TruckBooking.Exception.LoadSubErrorResponse;
 import com.TruckBooking.TruckBooking.Model.LoadRequest;
+import com.TruckBooking.TruckBooking.Model.LoadRequest.UnitValue;
 import com.TruckBooking.TruckBooking.Response.CreateLoadResponse;
 import com.TruckBooking.TruckBooking.Response.DeleteLoadResponse;
 import com.TruckBooking.TruckBooking.Response.UpdateLoadResponse;
 import com.TruckBooking.TruckBooking.Service.LoadServiceImpl;
 
+import net.minidev.json.JSONObject;
+
 @SpringBootTest
 public class TestLoadService {
+	
+private static Validator validator;
+	
+    @BeforeAll
+    public static void setUp() {
+       ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+       validator = factory.getValidator();
+    }
 
 	@Autowired
 	LoadServiceImpl loadservice;
@@ -39,259 +67,228 @@ public class TestLoadService {
 	@Order(1)
 	public void addLoad() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+				 
 		Load load = createLoads().get(0);
 
-		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra",
-				"id:1", "Raipur", "Raipur", "Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21",
-				"added comment", "pending", (long) 100, CreateLoadResponse.UnitValue.PER_TON);
+		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur","Nagpur" , "Maharashtra", "Raipur", "Raipur", "Chhattisgarh", "id:1", "Gold","OPEN_HALF_BODY" ,
+				"6", "1000kg", "22/01/2021", Load.Status.PENDING, "add comment", (long) 100, CreateLoadResponse.UnitValue.PER_TON, Timestamp.valueOf("2021-07-28 23:28:50.134"));
 
 		when(loaddao.save(load)).thenReturn(load);
 
 		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		createloadresponse1.setLoadId("load:862064c2-f58c-4758-986c-000000000000");
+		createloadresponse1.setTimestamp(Timestamp.valueOf("2021-07-28 23:28:50.134"));
+		
 
-		/// load id will not be same
-		assertEquals(createloadresponse.getStatus(), createloadresponse1.getStatus());
+		assertEquals(createloadresponse, createloadresponse1);
 	}
+	
 
-	// null loding point
+	// null loding poi nt
 	@Test
 	@Order(2)
 	public void addLoadfail1() {
 		LoadRequest loadrequest = new LoadRequest(null, "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", null, "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
+	
+		assertEquals(1, constraintViolations.size());
+		
 
-
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.loadingError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
-
-		assertEquals(createloadresponse, createloadresponse1);
+		
+	assertEquals("Loading Point Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
-
+	
 	// null loding city
 	@Test
 	@Order(3)
 	public void addLoadfail2() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", null, "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", null, "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		when(loaddao.save(load)).thenReturn(load);
+		assertEquals(1, constraintViolations.size());
+		
 
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.loadingCityError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
-
-		assertEquals(createloadresponse, createloadresponse1);
+		
+	assertEquals("Loading Point City Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
+	
 
 	// loadingstate null
 	@Test
 	@Order(4)
 	public void addLoadfail3() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", null, "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", null, "id:1", "Raipur", "Raipur", "Chhattisgarh", "Gold",
-				"OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur",null, "id:1", "Raipur", "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.loadingStateError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		assertEquals(1, constraintViolations.size());
 		
-		assertEquals(createloadresponse, createloadresponse1);
-	}
 
+		
+	assertEquals("Loading Point State Cannot Be Empty", constraintViolations.iterator().next().getMessage());
+	}
+	
 	// post load id error
 	@Test
 	@Order(5)
 	public void addLoadfail4() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", null, "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", null, "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.idError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
-		
-		assertEquals(createloadresponse, createloadresponse1);
-	}
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra", null, "Raipur", "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
+		assertEquals(1, constraintViolations.size());
+		
+
+		
+	assertEquals("PostLoad Id Cannot Be Empty", constraintViolations.iterator().next().getMessage());
+
+	}
+	
 	// unloadingpoint null
 	@Test
 	@Order(6)
 	public void addLoadfail5() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", null, "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", null, "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.unloadingError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,null , "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		assertEquals(createloadresponse, createloadresponse1);
+		assertEquals(1, constraintViolations.size());
+		
+
+		
+	assertEquals("Unloading Point Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
 
 	// unloading city error
 	@Test
 	@Order(7)
 	public void addLoadfail6() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:!", "Raipur", null,
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:!", "Raipur", null, "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.unloadingCityError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , null,
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
+		assertEquals(1, constraintViolations.size());
+		
 
-		assertEquals(createloadresponse, createloadresponse1);
+		
+	assertEquals("Unloading Point City Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
 
-	// unloading state error
+		// unloading state error
 	@Test
 	@Order(8)
 	public void addLoadfail7() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", null,
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", null, "Gold",
-				"OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.unloadingStateError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
+				null, "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		assertEquals(createloadresponse, createloadresponse1);
+		assertEquals(1, constraintViolations.size());
+		
+
+		
+	assertEquals("Unloading Point State Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
-
 	// product type null
 	@Test
 	@Order(9)
 	public void addLoadfail8() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:!", "Raipur", "Raipur",
-				"Chhattisgarh", null, "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:!", "Raipur", "Raipur", "Chhattisgarh",
-				null, "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.productTypeError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
+				"Chhattisgarh", null, "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		assertEquals(createloadresponse, createloadresponse1);
+		assertEquals(1, constraintViolations.size());
+		
+
+		
+	assertEquals("Product Type Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
-
 	// trucktype null
 	@Test
 	@Order(10)
 	public void addLoadfail9() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", null, "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", null, "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.truckTypeError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
+				"Chhattisgarh", "Gold", null, "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		assertEquals(createloadresponse, createloadresponse1);
+		assertEquals(1, constraintViolations.size());
+		
+
+		
+	assertEquals("Truck Type Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
 
 	// no of truck
 	@Test
 	@Order(11)
 	public void addLoadfail10() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:!", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", null, "10000kg", "01/05/21", "added comment", "pending",
-				(long) 100, LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:!", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", null, "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.noOfTrucksError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", null, "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
+	
+		assertEquals(1, constraintViolations.size());
+		
 
-		assertEquals(createloadresponse, createloadresponse1);
+		
+	assertEquals("No. of trucks Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
 
 	// weight null
 	@Test
 	@Order(12)
 	public void addLoadfail11() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", null, "01/05/21", "added comment", "pending", (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", null, "01/05/21", "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.weightError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", null,"add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
+	
+		assertEquals(1, constraintViolations.size());
+		
 
-		assertEquals(createloadresponse, createloadresponse1);
+		
+	assertEquals("Weight Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
-
 	// date null
 	@Test
 	@Order(13)
 	public void addLoadfail12() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", null, "added comment", "pending", (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", null, "added comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse(null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, CommonConstants.dateError, null, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", null, (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
-		assertEquals(createloadresponse, createloadresponse1);
+		assertEquals(1, constraintViolations.size());
+		
+
+		
+	assertEquals("Load Date Cannot Be Empty", constraintViolations.iterator().next().getMessage());
 	}
 
-	// comment null
+// comment null
 	@Test
 	@Order(14)
 	public void addLoadnullcomment() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", null, "pending", (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", null, "pending", (long) 100,
-				Load.UnitValue.PER_TON);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg",null, "22/01/2021", (long) 100,LoadRequest.UnitValue.PER_TON, Load.Status.PENDING
+				);
+		Load load = createLoads().get(0);
 		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra",
-				"id:1", "Raipur", "Raipur", "Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", null,
-				"pending", (long) 100, CreateLoadResponse.UnitValue.PER_TON);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur","Nagpur" , "Maharashtra", "Raipur", "Raipur", "Chhattisgarh", "id:1", "Gold","OPEN_HALF_BODY" ,
+				"6", "1000kg", "22/01/2021", Load.Status.PENDING, null, (long) 100, CreateLoadResponse.UnitValue.PER_TON, Timestamp.valueOf("2021-07-28 23:28:50.134"));
+		
+		
+		
+		when(loaddao.save(load)).thenReturn(load);
+	
+				CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+				createloadresponse1.setLoadId("load:862064c2-f58c-4758-986c-000000000000");
+				createloadresponse1.setTimestamp(Timestamp.valueOf("2021-07-28 23:28:50.134"));
+				
+				
 
-		assertEquals("pending", createloadresponse1.getStatus());
+		assertEquals(createloadresponse, createloadresponse1);
 	}
 
 	// status null
@@ -299,66 +296,83 @@ public class TestLoadService {
 	@Order(15)
 	public void addLoadnullstatus() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "comment", null, (long) 100,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "comment", "pending", (long) 100,
-				Load.UnitValue.PER_TON);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,LoadRequest.UnitValue.PER_TON, null
+				);
+		Load load = createLoads().get(0);
 		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra",
-				"id:1", "Raipur", "Raipur", "Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21",
-				"comment", "pending", (long) 100, CreateLoadResponse.UnitValue.PER_TON);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur","Nagpur" , "Maharashtra", "Raipur", "Raipur", "Chhattisgarh", "id:1", "Gold","OPEN_HALF_BODY" ,
+				"6", "1000kg", "22/01/2021", Load.Status.PENDING, "add comment", (long) 100, CreateLoadResponse.UnitValue.PER_TON, Timestamp.valueOf("2021-07-28 23:28:50.134"));
+		
+		
+		
+		when(loaddao.save(load)).thenReturn(load);
+	
+				CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+				createloadresponse1.setLoadId("load:862064c2-f58c-4758-986c-000000000000");
+				createloadresponse1.setTimestamp(Timestamp.valueOf("2021-07-28 23:28:50.134"));
+				
+				
 
-		assertEquals("pending", createloadresponse1.getStatus());
+		assertEquals(createloadresponse, createloadresponse1);
 	}
 
-	// rate null
+			// rate null
 	@Test
 	@Order(16)
 	public void addLoadnullrate() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "comment", "pending", null,
-				LoadRequest.UnitValue.PER_TON);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "comment", "pending", null,
-				Load.UnitValue.PER_TON);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra",
-				"id:1", "Raipur", "Raipur", "Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21",
-				"comment", "pending", null, CreateLoadResponse.UnitValue.PER_TON);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", null,  UnitValue.PER_TON, Load.Status.PENDING);
+		
+		Throwable exception = assertThrows(
+				BusinessException.class, () -> {
+					CreateLoadResponse result = loadservice.addLoad(loadrequest);
+					
+    }
+);
+		assertEquals("ErrorUnitValue can't be set when the rate is not provided", exception.getMessage());
 
-		assertEquals("pending", createloadresponse1.getStatus());
 	}
 
-	// unit value null
+// unit value null
 	@Test
 	@Order(17)
 	public void addLoadnullunitvalue() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "comment", "pending", (long) 100,
-				null);
-		Load load = new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-				"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "comment", "pending", (long) 100, null);
-		when(loaddao.save(load)).thenReturn(load);
-		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra",
-				"id:1", "Raipur", "Raipur", "Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21",
-				"comment", "pending", (long) 100, null);
-		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long)100, null, Load.Status.PENDING);
+		
+		Throwable exception = assertThrows(
+				BusinessException.class, () -> {
+					CreateLoadResponse result = loadservice.addLoad(loadrequest);
+					
+    }
+);
+		assertEquals("ErrorUnitValue can't be null when the rate is provided", exception.getMessage());
 
-		assertEquals("pending", createloadresponse1.getStatus());
 	}
 
-	@Test
+ @Test
 	@Order(18)
 	public void getLoadsByLoadId() {
 		Load load = createLoads().get(0);
-		when(loaddao.findByLoadId("load:862064c2-f58c-4758-986c-000000000000")).thenReturn(Optional.of(load));
-		assertEquals(load, loadservice.getLoad("load:862064c2-f58c-4758-986c-000000000000"));
+		when(loaddao.findByLoadId("load:0a5f1700-041a-43d4-b3eb-000000000001")).thenReturn(Optional.of(load));
+		assertEquals(load, loadservice.getLoad("load:0a5f1700-041a-43d4-b3eb-000000000001"));
+	}
+ 
+ @Test
+	@Order(12)
+	public void getLoad_id_not_present()
+	{
+		when(loaddao.findById("shipper:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
+		
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					Load load = loadservice.getLoad("load:0de885e0-5f43-4c68-8dde-0000000000000");
+	            }
+	    );
+	    assertEquals("Load was not found for parameters {id=load:0de885e0-5f43-4c68-8dde-0000000000000}", exception.getMessage());
 	}
 
-	// suggested loads true
+ /*	// suggested loads true
 	@Test
 	@Order(19)
 	public void getLoadsBytruckType1() {
@@ -478,56 +492,53 @@ public class TestLoadService {
 		UpdateLoadResponse result = loadservice.updateLoad("loadd:862064c2-f58c-4758-986c-095cd6c2091", loadrequest);
 
 		assertEquals(updateloadresponse, result);
-	}
+	}*/
 
 	@Test
 	@Order(28)
 	public void deleteLoadFail() {
-		when(loaddao.findByLoadId("load:862064c2-f58c-4758-986c-095cd6c2091")).thenReturn(Optional.empty());
-
-		DeleteLoadResponse response = new DeleteLoadResponse(CommonConstants.AccountNotFoundError);
-
-		DeleteLoadResponse result = loadservice.deleteLoad("loadd:862064c2-f58c-4758-986c-095cd6c2091");
-
-		assertEquals(response, result);
+	
+		when(loaddao.findByLoadId("id=load:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
+		
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					 loadservice.deleteLoad("load:0de885e0-5f43-4c68-8dde-0000000000000");
+	            }
+	    );
+	    assertEquals("Load was not found for parameters {id=load:0de885e0-5f43-4c68-8dde-0000000000000}", exception.getMessage());
 	}
 
 	@Test
 	@Order(29)
 	public void deleteLoad() {
-		DeleteLoadResponse response = new DeleteLoadResponse(CommonConstants.deleteSuccess);
-		when(loaddao.findByLoadId("load:862064c2-f58c-4758-986c-000000000000")).thenReturn(Optional.of(createLoads().get(0)));
-
-		DeleteLoadResponse result = loadservice.deleteLoad("load:862064c2-f58c-4758-986c-000000000000");
+		{
+			when(loaddao.findById("load:0a5f1700-041a-43d4-b3eb-000000000001")).thenReturn(Optional.of(createLoads().get(0)));
+			assertDoesNotThrow(()->
+				loadservice.deleteLoad("load:0a5f1700-041a-43d4-b3eb-000000000001"));
+		}
+		}
 		
-		assertEquals(response, result);
-	}
-
+/*
 	public LoadRequest createLoadRequest() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
 				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending",
 				(long) 100, LoadRequest.UnitValue.PER_TON);
 		return loadrequest;
 	}
-
-	public List<Load> createLoads() {
+	*/
+	public List<Load> createLoads()
+	{
 		List<Load> loads = Arrays.asList(
-				new Load("load:862064c2-f58c-4758-986c-000000000000", "Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur", "Chhattisgarh",
-						"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-						Load.UnitValue.PER_TON),
-				new Load("load:862064c2-f58c-4758-986c-000000000001", "Nagpur", "Nagpur", "Maharashtra", "id:2", "Raipur", "Raipur", "Chhattisgarh",
-						"Gold", "OPEN_HALF_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-						Load.UnitValue.PER_TON),
-				new Load("load:862064c2-f58c-4758-986c-000000000002", "Nagpur", "Nagpur", "Maharashtra", "id:3", "Raipur", "Raipur", "Chhattisgarh",
-						"Gold", "OPEN_FULL_BODY", "6", "10000kg", "01/05/21", "added comment", "pending", (long) 100,
-						Load.UnitValue.PER_TON),
-				new Load("load:862064c2-f58c-4758-986c-000000000003", "Nagpur", "Nagpur", "Maharashtra", "id:4", "Raipur", "Raipur", "Chhattisgarh",
-						"Gold", "OPEN_HALF_BODY", "6", "10000kg", "02/05/21", "added comment", "pending", (long) 100,
-						Load.UnitValue.PER_TON),
-				new Load("load:862064c2-f58c-4758-986c-000000000004", "Nagpur", "Nagpur", "Maharashtra", "id:5", "Raipur", "Raipur", "Chhattisgarh",
-						"Gold", "OPEN_HALF_BODY", "6", "10000kg", "03/05/21", "added comment", "pending", (long) 100,
-						Load.UnitValue.PER_TON));
+		new Load("load:0a5f1700-041a-43d4-b3eb-000000000001","Nagpur","Mumbai","Maharashtra","id:1","Raipur","Raipur","Chhattisgarh",
+			"Metal Scrap","OPEN_HALF_BODY","4","10000kg","no comments","22/01/21",(long) 505500,Load.UnitValue.PER_TON, Load.Status.PENDING, Timestamp.valueOf("2021-07-28 23:28:50.134")
+			), 
+		new Load("load:0a5f1700-041a-43d4-b3eb-000000000002","Nagpur","Nagpur","Maharashtra","id:1","Raipur","Raipur","Chhattisgarh",
+					"Metal Scrap","OPEN_HALF_BODY","4","10000kg","no comments","22/01/21",(long) 505500,Load.UnitValue.PER_TON, Load.Status.PENDING, Timestamp.valueOf("2021-07-28 23:28:50.134")),
+		new Load("load:0a5f1700-041a-43d4-b3eb-000000000003","Nagpur","Nagpur","Maharashtra","id:2","Raipur","Raipur","Chhattisgarh",
+							"Metal Scrap","OPEN_HALF_BODY","4","10000kg","no comments","22/01/21",(long) 505500,Load.UnitValue.PER_TON, Load.Status.PENDING, Timestamp.valueOf("2021-07-28 23:28:50.134"))
+		); 
+		
 		return loads;
 	}
 }
-*/
+
