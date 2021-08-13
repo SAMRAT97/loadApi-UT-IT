@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -33,6 +34,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import com.TruckBooking.TruckBooking.Exception.BusinessException;
 import com.TruckBooking.TruckBooking.Exception.EntityNotFoundException;
 import com.TruckBooking.TruckBooking.Exception.LoadErrorResponse;
@@ -46,6 +49,7 @@ import com.TruckBooking.TruckBooking.Model.LoadRequest.UnitValue;
 import com.TruckBooking.TruckBooking.Response.CreateLoadResponse;
 import com.TruckBooking.TruckBooking.Response.DeleteLoadResponse;
 import com.TruckBooking.TruckBooking.Response.UpdateLoadResponse;
+import com.TruckBooking.TruckBooking.Service.LoadService;
 import com.TruckBooking.TruckBooking.Service.LoadServiceImpl;
 
 import net.minidev.json.JSONObject;
@@ -67,37 +71,36 @@ private static Validator validator;
 	@MockBean
 	LoadDao loaddao;
 
-//	@Test
-//	@Order(1)
-//	public void addLoad() {
-//		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-//				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
-//				 
-//		Load load = createLoads().get(0);
-//
-//		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur","Nagpur" , "Maharashtra", "Raipur", "Raipur", "Chhattisgarh", "id:1", "Gold","OPEN_HALF_BODY" ,
-//				"6", "1000kg", "22/01/2021", Load.Status.PENDING, "add comment", (long) 100, CreateLoadResponse.UnitValue.PER_TON, Timestamp.valueOf("2021-07-28 23:28:50.134"));
-//
-//		when(loaddao.save(load)).thenReturn(load);
-//
-//		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
-//		createloadresponse1.setLoadId("load:862064c2-f58c-4758-986c-000000000000");
-//		createloadresponse1.setTimestamp(Timestamp.valueOf("2021-07-28 23:28:50.134"));
-//		
-//
-//		assertEquals(createloadresponse, createloadresponse1);
-//	}
+	@Test
+	@Order(1)
+	public void addLoad() {
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+				 
+		Load load = createLoads().get(0);
+
+		CreateLoadResponse createloadresponse = new CreateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Nagpur","Nagpur" , "Maharashtra", "Raipur", "Raipur", "Chhattisgarh", "id:1", "Gold","OPEN_HALF_BODY" ,
+				"6", "1000kg", "22/01/2021", Load.Status.PENDING, "add comment", (long) 100, CreateLoadResponse.UnitValue.PER_TON, Timestamp.valueOf("2021-07-28 23:28:50.134"));
+
+		when(loaddao.save(load)).thenReturn(load);
+
+		CreateLoadResponse createloadresponse1 = loadservice.addLoad(loadrequest);
+		createloadresponse1.setLoadId("load:862064c2-f58c-4758-986c-000000000000");
+		createloadresponse1.setTimestamp(Timestamp.valueOf("2021-07-28 23:28:50.134"));
+		
+
+		assertEquals(createloadresponse, createloadresponse1);
+	}
 	
 
 	// null loding poi nt
-/*	@Test
+	@Test
 	@Order(2)
 	public void addLoadfail1() {
 		LoadRequest loadrequest = new LoadRequest(null, "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
-				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", null,  UnitValue.PER_TON, Load.Status.PENDING);
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
 		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 		
-
 		
 		Iterator<ConstraintViolation<LoadRequest>> itr= constraintViolations.iterator();
 		Set<String> set =new HashSet<String>();
@@ -105,12 +108,11 @@ private static Validator validator;
 		while(itr.hasNext()) set.add(itr.next().getMessage());
 		
 		
-		System.err.println(set.toString());
-		
 		
 		assertEquals(1, constraintViolations.size());
 		
 		assertTrue(set.contains("Loading Point Cannot Be Empty"));
+		
 		
 	}
 	
@@ -142,7 +144,7 @@ private static Validator validator;
 	@Test
 	@Order(4)
 	public void addLoadfail3() {
-		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur",null, "id:1", "Raipur", "Raipur",
+		LoadRequest loadrequest = new LoadRequest("Nagpur", null,null, "id:1", "Raipur", "Raipur",
 				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
 		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
 
@@ -155,9 +157,10 @@ private static Validator validator;
 		System.err.println(set.toString());
 		
 		
-		assertEquals(1, constraintViolations.size());
+		assertEquals(2, constraintViolations.size());
 		
 		assertTrue(set.contains("Loading Point State Cannot Be Empty"));
+		assertTrue(set.contains("Loading Point City Cannot Be Empty"));
 	}
 	
 	// post load id error
@@ -232,8 +235,17 @@ private static Validator validator;
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur","Maharashtra","id:1" ,"Raipur" , "Raipur",
 				null, "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
 		Set<ConstraintViolation<LoadRequest>> constraintViolations = validator.validate( loadrequest );
+		
+		Iterator<ConstraintViolation<LoadRequest>> itr= constraintViolations.iterator();
+		Set<String> set =new HashSet<String>();
+		
+		while(itr.hasNext()) set.add(itr.next().getMessage());
+		
+		
+		System.err.println(set.toString());
 
 		assertEquals(1, constraintViolations.size());
+		assertTrue(set.contains("Unloading Point State Cannot Be Empty"));
 		
 
 		
@@ -409,10 +421,12 @@ private static Validator validator;
 		
 		Throwable exception = assertThrows(
 				BusinessException.class, () -> {
-					CreateLoadResponse result = loadservice.addLoad(loadrequest);
+					 loadservice.addLoad(loadrequest);		  
 					
     }
+				
 );
+	
 		assertEquals("ErrorUnitValue can't be set when the rate is not provided", exception.getMessage());
 
 	}
@@ -426,7 +440,7 @@ private static Validator validator;
 		
 		Throwable exception = assertThrows(
 				BusinessException.class, () -> {
-					CreateLoadResponse result = loadservice.addLoad(loadrequest);
+					 loadservice.addLoad(loadrequest);
 					
     }
 );
@@ -446,7 +460,7 @@ private static Validator validator;
 	@Order(12)
 	public void getLoad_id_not_present()
 	{
-		when(loaddao.findById("shipper:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
+		when(loaddao.findById("load:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
 		
 		Throwable exception = assertThrows(
 				EntityNotFoundException.class, () -> {
@@ -454,85 +468,163 @@ private static Validator validator;
 	            }
 	    );
 	    assertEquals("Load was not found for parameters {id=load:0de885e0-5f43-4c68-8dde-0000000000000}", exception.getMessage());
-	}*/
-
- 	// suggested loads true
-	@Test
-	@Order(19)
-	public void getLoadsBytruckType1() {
-		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
-		List<Load> loads = createLoads().subList(1, 3);
-		when(loaddao.findByAll(currentPage)).thenReturn(loads);
-		Collections.reverse(loads);
-
-		List<Load> result = loadservice.getLoads(0, null, null, null, "OPEN_HALF_BODY", null, true);
-		assertEquals(loads, result);
 	}
+
 
 	// suggested loads false
 	@Test
 	@Order(20)
-	public void getLoadsBytruckType2() {
+	public void getLoadsBytruckType() {
 		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
 		List<Load> loads = createLoads().subList(0,3);
 		when(loaddao.findByTruckTypeAndStatus("OPEN_HALF_BODY", Load.Status.PENDING, currentPage)).thenReturn(loads);
 		Collections.reverse(loads);
 		List<Load> result = loadservice.getLoads(0, null, null, null, "OPEN_HALF_BODY", null, false);
 		assertEquals(loads, result);
 	}
+	
+	@Test
+	@Order(20)
+	public void getLoadsBytruckTypefail() {
+		Pageable currentPage;
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
+		List<Load> loads = createLoads().subList(0,3);
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					loadservice.getLoads(0, null, null, null, "OPEN_HALF_BODY", null, false);
+			
+	            });
+		assertEquals("Load was not found for parameters {truckType=OPEN_HALF_BODY}", exception.getMessage());
+	}
 
 	@Test
 	@Order(21)
 	public void getLoadsBydate() {
 		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
 		List<Load> loads = createLoads().subList(0, 3);
 		
 		when(loaddao.findByLoadDateAndStatus("22/01/21",Load.Status.PENDING, currentPage)).thenReturn(loads);
 		Collections.reverse(loads);
 		List<Load> result = loadservice.getLoads(0, null, null, null, null, "22/01/21", false);
 		
-		System.err.println(loads);
-		System.err.println(result);
+		
 		assertEquals(loads, result);
+	}
+	
+	@Test
+	@Order(21)
+	public void getLoadsBydatefail() {
+		Pageable currentPage;
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
+		List<Load> loads = createLoads().subList(0, 3);
+		
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					loadservice.getLoads(0, null, null, null, null, "22/01/21", false);
+			
+	            });
+		assertEquals("Load was not found for parameters {loadDate=22/01/21}", exception.getMessage());
 	}
 
 	@Test
 	@Order(22)
-	public void getLoadsByposLoadId() {
+	public void getLoadsBypostLoadIdfail() {
 		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
+		List<Load> loads = createLoads().subList(0,1);
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					loadservice.getLoads(0, null, null, "id:2", null, null, false);
+			
+	            });
+		assertEquals("Load was not found for parameters {postLoadId=id:2}", exception.getMessage());
+	}
+	
+	@Test
+	@Order(22)
+	public void getLoadsBypostLoadId() {
+		Pageable currentPage;
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
 		List<Load> loads = createLoads().subList(0,1);
 		when(loaddao.findByPostLoadIdAndStatus("id:1",Load.Status.PENDING, currentPage)).thenReturn(loads);
 		Collections.reverse(loads);
 		List<Load> result = loadservice.getLoads(0, null, null, "id:1", null, null, false);
-		System.err.println(loads);
-		System.err.println(result);
+		
 		
 		assertEquals(loads, result);
 	}
+
 
 	@Test
 	@Order(23)
 	public void getLoadsByloadingPointCity() {
 		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
 		List<Load> loads = createLoads();
 		when(loaddao.findByLoadingPointCityAndStatus("Nagpur",Load.Status.PENDING, currentPage)).thenReturn(loads);
 		Collections.reverse(loads);
 		List<Load> result = loadservice.getLoads(0, "Nagpur", null, null, null, null, false);
 		assertEquals(loads, result);
 	}
+	
+	@Test
+	@Order(23)
+	public void getLoadsByloadingPointCityFail() {
+		Pageable currentPage;
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
+		List<Load> loads = createLoads();
+
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					loadservice.getLoads(0, "Nagpur", null, null, null, null, false);
+			
+	            });
+		assertEquals("Load was not found for parameters {loadingPointCity=Nagpur}", exception.getMessage());
+				
+	}
+	
+	
+	
+	@Test
+	@Order(24)
+	public void getLoadsByunloadingPointCity() {
+		Pageable currentPage;
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
+		List<Load> loads = createLoads();
+		when(loaddao.findByUnloadingPointCityAndStatus("Raipur",Load.Status.PENDING, currentPage)).thenReturn(loads);
+		Collections.reverse(loads);
+		List<Load> result = loadservice.getLoads(0, null, "Raipur", null, null, null, false);
+		
+		System.err.println(loads);
+		System.err.println(result);
+		
+		assertEquals(loads, result);
+	} 
+	
+	@Test
+	@Order(24)
+	public void getLoadsByunloadingPointCityfail() {
+		Pageable currentPage;
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
+		List<Load> loads = createLoads();
+		Throwable exception = assertThrows(
+				EntityNotFoundException.class, () -> {
+					loadservice.getLoads(0, null, "Raipur", null, null, null, false);
+			
+	            });
+		assertEquals("Load was not found for parameters {unloadingPointCity=Raipur}", exception.getMessage());
+	}
+	
 
 	// unable to search using only unloading point, loading point is also necessary
 	// for this
 	@Test
-	@Order(24)
-	public void getLoadsByloadandunloadingPointCity() {
+	@Order(25)
+	public void getLoadsByloadingpointcityandunloadingPointCity() {
 		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
+		currentPage = PageRequest.of(0, CommonConstants.pagesize, Sort.Direction.DESC, "timestamp");
 
 		List<Load> loads = createLoads();
 		when(loaddao.findByLoadingPointCityAndUnloadingPointCityAndStatus("Nagpur", "Raipur",Load.Status.PENDING, currentPage)).thenReturn(loads);
@@ -542,47 +634,40 @@ private static Validator validator;
 	}
 
 	@Test
-	@Order(25)
-	public void getLoad() {
-		List<Load> loads = createLoads();
-
-		Pageable currentPage;
-		currentPage = PageRequest.of(0, CommonConstants.pagesize);
-		when(loaddao.findByAll(currentPage)).thenReturn(loads);
-		Collections.reverse(loads);
-		List<Load> result = loadservice.getLoads(0, null, null, null, null, null, false);
-		assertEquals(loads, result);
-	}
-/*
-	@Test
 	@Order(26)
 	public void updateLoad() {
 		List<Load> loads = createLoads();
-		when(loaddao.findByLoadId("load:862064c2-f58c-4758-986c-000000000000")).thenReturn(Optional.of(loads.get(0)));
-		LoadRequest loadrequest = new LoadRequest("Surat", "Surat", "Gujarat", "id:5", "Mumbai", "Mumbai",
-				"Maharashtra", "Silver", "OPEN_FULL_BODY", "7", "200kg", "05/05/21", "no comment",
-				CommonConstants.updateSuccess, (long) 100, LoadRequest.UnitValue.PER_TRUCK);
-		UpdateLoadResponse updateloadresponse = new UpdateLoadResponse("load:862064c2-f58c-4758-986c-000000000000", "Surat", "Surat", "Gujarat", "id:5",
-				"Mumbai", "Mumbai", "Maharashtra", "Silver", "OPEN_FULL_BODY", "7", "200kg", "05/05/21", "no comment",
-				CommonConstants.updateSuccess, (long) 100, UpdateLoadResponse.UnitValue.PER_TRUCK);
-		updateloadresponse.setStatus(CommonConstants.updateSuccess);
-		UpdateLoadResponse result = loadservice.updateLoad("load:862064c2-f58c-4758-986c-000000000000", loadrequest);
+		when(loaddao.findByLoadId("load:0a5f1700-041a-43d4-b3eb-000000000001")).thenReturn(Optional.of(loads.get(0)));
+		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
+				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","no comment", "22/01/21", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
+		UpdateLoadResponse updateloadresponse = new UpdateLoadResponse("load:0a5f1700-041a-43d4-b3eb-000000000001", "Nagpur", "Nagpur", "Maharashtra",
+				"Raipur", "Raipur","Chhattisgarh","id:1", "Gold", "OPEN_HALF_BODY", "6", "1000kg", "22/01/21",Load.Status.PENDING,"no comment",
+				 (long) 100, UpdateLoadResponse.UnitValue.PER_TON, Timestamp.valueOf("2021-07-28 23:28:50.134"));
+		
+		
+		UpdateLoadResponse result = loadservice.updateLoad("load:0a5f1700-041a-43d4-b3eb-000000000001", loadrequest);
+		
+		
 		assertEquals(updateloadresponse, result);
+		
 	}
+		
 
 	@Test
 	@Order(27)
 	public void updateLoadfailed() {
 		List<Load> loads = createLoads();
-		when(loaddao.findByLoadId("id=load:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
+	when(loaddao.findByLoadId("id=load:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",
 				"Chhattisgarh", "Gold", "OPEN_HALF_BODY", "6", "1000kg","add comment", "22/01/2021", (long) 100,  UnitValue.PER_TON, Load.Status.PENDING);
 		
 		Throwable exception = assertThrows(
 				EntityNotFoundException.class, () -> {
-					UpdateLoadResponse result= loadservice.updateLoad("load:0de885e0-5f43-4c68-8dde-0000000000000",loadrequest);
+					loadservice.updateLoad("load:0de885e0-5f43-4c68-8dde-0000000000000",loadrequest);
+			
 	            }
 	    );
+		System.err.println(exception.getMessage());
 	    assertEquals("Load was not found for parameters {id=load:0de885e0-5f43-4c68-8dde-0000000000000}", exception.getMessage());
 	}
 
@@ -590,7 +675,7 @@ private static Validator validator;
 	@Order(28)
 	public void deleteLoadFail() {
 	
-		when(loaddao.findByLoadId("id=load:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
+//		when(loaddao.findByLoadId("id=load:0de885e0-5f43-4c68-8dde-0000000000000")).thenReturn(Optional.empty());
 		
 		Throwable exception = assertThrows(
 				EntityNotFoundException.class, () -> {
@@ -604,12 +689,11 @@ private static Validator validator;
 	@Order(29)
 	public void deleteLoad() {
 		{
-			when(loaddao.findById("load:0a5f1700-041a-43d4-b3eb-000000000001")).thenReturn(Optional.empty());
-			assertDoesNotThrow(()->
-				loadservice.deleteLoad("load:0a5f1700-041a-43d4-b3eb-000000000001"));
+			when(loaddao.findByLoadId("load:0a5f1700-041a-43d4-b3eb-000000000001")).thenReturn(Optional.of(createLoads().get(0)));
+			assertDoesNotThrow(()->loadservice.deleteLoad("load:0a5f1700-041a-43d4-b3eb-000000000001"));
 		}
 		}
-*/
+
 
 	public LoadRequest createLoadRequest() {
 		LoadRequest loadrequest = new LoadRequest("Nagpur", "Nagpur", "Maharashtra", "id:1", "Raipur", "Raipur",

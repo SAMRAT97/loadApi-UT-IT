@@ -58,25 +58,25 @@ public class TestLoadDao {
 	
 	
 		
-//	@Test
-//	public void testfindByloadid()
-//	{
-//		List<Load> loads = createLoads();
-//		
-//		Load savedindb1 = entityManager.persist(loads.get(0));
-//		Load savedindb2 = entityManager.persist(loads.get(1));
-//		List<Load> load = Arrays.asList(savedindb2);
-//
-//		Load savedindb3 = entityManager.persist(loads.get(2));
-//		
-//		Pageable currentPage = (Pageable) PageRequest.of(0, CommonConstants.pagesize);
-//		Optional<Load> Loads = loadDao.findByLoadId("load:0a5f1700-041a-43d4-b3eb-000000000002");
-//		
-//		
-//		
-//		assertThat(Arrays.asList(Loads.get())).isEqualTo(load);
-//		
-//	}
+	@Test
+	public void testfindByloadid()
+	{
+		List<Load> loads = createLoads();
+		
+		Load savedindb1 = entityManager.persist(loads.get(0));
+		Load savedindb2 = entityManager.persist(loads.get(1));
+		List<Load> load = Arrays.asList(savedindb2);
+
+		Load savedindb3 = entityManager.persist(loads.get(2));
+		
+		Pageable currentPage = (Pageable) PageRequest.of(0, CommonConstants.pagesize);
+		Optional<Load> Loads = loadDao.findByLoadId("load:0a5f1700-041a-43d4-b3eb-000000000002");
+		
+		
+		
+		assertThat(Arrays.asList(Loads.get())).isEqualTo(load);
+		
+	}
 	
 
 	@Test

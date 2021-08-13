@@ -92,10 +92,10 @@ public class TestLoadController {
 		String outputInJson = response.getContentAsString();
 
 		assertThat(outputInJson).isEqualTo(expectedJson);
-		assertEquals(HttpStatus.OK.value(), response.getStatus());
+		assertEquals(HttpStatus.CREATED.value(), response.getStatus());
 	}
 	
-/*	// sending loadid using url
+	// sending loadid using url
 	@Test
 	@Order(2)
 	public void getLoadbyloadid() throws Exception {
@@ -109,14 +109,19 @@ public class TestLoadController {
 		RequestBuilder requestBuilder = MockMvcRequestBuilders.get(CommonConstants.LOADID_URI).accept(MediaType.APPLICATION_JSON);
 
 		MvcResult result = mockMvc.perform(requestBuilder).andReturn();
+		MockHttpServletResponse response1 = result.getResponse();
+		
 		String expectedJson = mapToJson(loads.get(0));
 		String outputInJson = result.getResponse().getContentAsString();
 
 		assertEquals(expectedJson, outputInJson);
-		
-		MockHttpServletResponse response1 = result.getResponse();
 		assertEquals(HttpStatus.OK.value(), response1.getStatus());
 	}
+	
+	
+	
+	
+	
 	// using loadingpoint city, suggestedloads = true
 	@Test
 	@Order(3)
@@ -326,31 +331,31 @@ public class TestLoadController {
 		MockHttpServletResponse response1 = result.getResponse();
 		assertEquals(HttpStatus.OK.value(), response1.getStatus());
 	}
-	*/
+	
 	@Test
 	@Order(11)
 	public void deleteLoad() throws Exception {
-		DeleteLoadResponse response = new DeleteLoadResponse();
-		response.setStatus(CommonConstants.deleteSuccess);
+		
 		
 		List<Load> loads = createLoads();
-		doNothing().when(loadservice).deleteLoad(CommonConstants.LOADID);
+		doNothing().when(loadservice).deleteLoad("load:0a5f1700-041a-43d4-b3eb-000000000001");
 		
-		RequestBuilder requestBuilder = MockMvcRequestBuilders.delete(CommonConstants.LOADID_URI).accept(MediaType.APPLICATION_JSON);
+		RequestBuilder requestBuilder = MockMvcRequestBuilders.delete("/load/load:0a5f1700-041a-43d4-b3eb-000000000001").accept(MediaType.APPLICATION_JSON);
 		
 		MvcResult result = mockMvc.perform(requestBuilder).andReturn();
 		
-		String expectedJson = mapToJson(response);
-		String outputInJson = result.getResponse().getContentAsString();
-		System.out.println(expectedJson);
-		System.out.println(outputInJson);
-		assertEquals(expectedJson, outputInJson);
+		
+		
 		
 		MockHttpServletResponse response1 = result.getResponse();
-		assertEquals("Successfully deleted", response1.getContentAsString());
+		
+		System.err.println(response1.getContentAsString());
+		
+		assertEquals("Successfully Deleted", response1.getContentAsString());
 		assertEquals(HttpStatus.OK.value(), response1.getStatus());
 	}
 	
+
 	
 	public LoadRequest createLoadRequest()
 	{
