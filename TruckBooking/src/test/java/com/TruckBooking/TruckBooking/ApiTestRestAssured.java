@@ -56,8 +56,8 @@ public class ApiTestRestAssured {
 					.header("accept", "application/json").header("Content-Type", "application/json").get().then()
 					.extract().response();
 
-			loadingpointcitycount += response11.jsonPath().getList("$").size();
-			if (response11.jsonPath().getList("$").size() != CommonConstants.pagesize)
+			loadingpointcitycount += response11.jsonPath().getMap("$").size();
+			if (response11.jsonPath().getMap("$").size() != CommonConstants.pagesize)
 				break;
 
 			loadingpointcitypagecount++;
@@ -82,8 +82,8 @@ public class ApiTestRestAssured {
 					.header("accept", "application/json").header("Content-Type", "application/json").get().then()
 					.extract().response();
 
-			postloadidcount += response33.jsonPath().getList("$").size();
-			if (response33.jsonPath().getList("$").size() != CommonConstants.pagesize)
+			postloadidcount += response33.jsonPath().getMap("$").size();
+			if (response33.jsonPath().getMap("$").size() != CommonConstants.pagesize)
 				break;
 			postloadidpagecount++;
 		}
@@ -94,8 +94,8 @@ public class ApiTestRestAssured {
 					.header("accept", "application/json").header("Content-Type", "application/json").get().then()
 					.extract().response();
 
-			loaddatecount += response44.jsonPath().getList("$").size();
-			if (response44.jsonPath().getList("$").size() != CommonConstants.pagesize)
+			loaddatecount += response44.jsonPath().getMap("$").size();
+			if (response44.jsonPath().getMap("$").size() != CommonConstants.pagesize)
 				break;
 			loaddatepagecount++;
 		}
@@ -106,8 +106,8 @@ public class ApiTestRestAssured {
 					.header("accept", "application/json").header("Content-Type", "application/json").get().then()
 					.extract().response();
 
-			trucktypecount += response55.jsonPath().getList("$").size();
-			if (response55.jsonPath().getList("$").size() != CommonConstants.pagesize)
+			trucktypecount += response55.jsonPath().getMap("$").size();
+			if (response55.jsonPath().getMap("$").size() != CommonConstants.pagesize)
 				break;
 			trucktypepagecount++;
 		}
